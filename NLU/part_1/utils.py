@@ -6,10 +6,10 @@ import torch.optim as optim
 import torch.utils.data as data
 import torch.nn.functional as F
 import math
-import numpy as np
 from functools import partial
 from torch.utils.data import DataLoader
 
+DEVICE = 'cuda:0' # it can be changed with 'cpu' if you do not have a gpu
 
 # =============== Preprocessing ===============
 
@@ -138,8 +138,8 @@ def collate_fn(data, pad_token):
 def preprocess_and_load_data():
     # =============== Reading and Loading Data ===============
     train_raw = read_file("dataset/ptb.train.txt")
-    dev_raw = read_file("dataset/ptb.train.txt")
-    test_raw = read_file("dataset/ptb.train.txt")
+    dev_raw = read_file("dataset/ptb.valid.txt")
+    test_raw = read_file("dataset/ptb.test.txt")
 
 
     # =============== Vocabulary Preparation ===============

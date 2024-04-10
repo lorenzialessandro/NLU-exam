@@ -1,8 +1,13 @@
 # Add the class of your model only
 # Here is where you define the architecture of your model using pytorch
-import matplotlib.pyplot as plt
-from tqdm import tqdm
+import torch
+import torch.nn as nn
+import math
+import numpy as np
 import copy
+from tqdm import tqdm
+
+clip = 5
 
 # =============== Model Training and Evaluation Functions ===============
 
@@ -66,9 +71,6 @@ def init_weights(mat):
                     
                     
 # =============== Training and Evaluation Loops ===============                 
-
-
-
 def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criterion_train, criterion_eval, model, device, n_epochs=100, patience=3):
     losses_train = []
     losses_dev = []
@@ -78,7 +80,7 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
     pbar = tqdm(range(1,n_epochs))
     
     for epoch in pbar:
-        loss = train_loop(train_loader, optimizer, criterion_train, model, clip)
+        loss = train_loop(train_loader, optimizer, criterion_train, model, clip=5)
 
         if epoch % 1 == 0:
             sampled_epochs.append(epoch)
