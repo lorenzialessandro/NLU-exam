@@ -39,6 +39,7 @@ class LM_LSTM(nn.Module):
 # LSTM with two dropout (randomly selected neurons are ignored during training) layers:
   # one after the embedding layer
   # one before the last linear layer
+  # probability = 0.4
 class LM_LSTM_dropout(nn.Module):
     def __init__(self, emb_size, hidden_size, output_size, pad_index=0, out_dropout=0.4,
                  emb_dropout=0.4, n_layers=1):

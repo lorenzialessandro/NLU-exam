@@ -133,8 +133,8 @@ def collate_fn(data, pad_token):
 
 # =============== =============== ===============
 
-# check if move / call it on functions
-# check if pass parms : preprocess_and_load_data(train_file, dev_file, test_file)
+# - [ ] check if move / call it on functions
+# - [ ] check if pass parms : preprocess_and_load_data(train_file, dev_file, test_file)
 def preprocess_and_load_data():
     # =============== Reading and Loading Data ===============
     train_raw = read_file("dataset/ptb.train.txt")

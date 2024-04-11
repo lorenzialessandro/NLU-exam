@@ -17,7 +17,7 @@ if __name__ == "__main__":
     #Wrtite the code to load the datasets and to run your functions
     # Print the results
     
-    lr = 0.001          # learning rate
+    lr = 1.5          # learning rate
     
     
     # Preprocess and load data
@@ -25,17 +25,24 @@ if __name__ == "__main__":
     vocab_len = len(lang.word2id)
     
     # Instantiate the model
-    model = LM_LSTM_dropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
+    model = LM_RNN(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
     model.apply(init_weights)
     criterion_train = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"])
     criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reduction='sum')   
 
     # Instantiate the optimizer
-    # optimizer = optim.SGD(model.parameters(), lr=lr)
-    optimizer = optim.AdamW(model.parameters(), lr=lr)
+    optimizer = optim.SGD(model.parameters(), lr=lr)
+    # optimizer = optim.AdamW(model.parameters(), lr=lr)
     
     # Train and evaluate the model
     result = train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criterion_train, criterion_eval, model, device, n_epochs, patience)
     
     print(result)
+    
+    path = 'model_bin/RNN.pt'
+    torch.save(model.state_dict(), path)
+    # To load the model you need to initialize it
+    # model = LM_RNN(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
+    # Then you load it
+    # model.load_state_dict(torch.load(path))
         
