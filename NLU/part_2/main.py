@@ -26,7 +26,7 @@ if __name__ == "__main__":
     vocab_len = len(lang.word2id)
     
     # Instantiate the model
-    emb_size = hid_size
+    # emb_size = hid_size # for weight tying 
     model = LM_LSTM_VariationalDropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
     model.apply(init_weights)
     criterion_train = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"])
