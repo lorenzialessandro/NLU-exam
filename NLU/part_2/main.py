@@ -17,23 +17,25 @@ if __name__ == "__main__":
     #Wrtite the code to load the datasets and to run your functions
     # Print the results
     
-    lr = 0.001         # learning rate
+    lr = 1.9         # learning rate
     # 0.001
     
     
     # Preprocess and load data
-    train_loader, dev_loader, test_loader, lang = preprocess_and_load_data()
+    train_loader, dev_loader, test_loader, lang, train_dataset = preprocess_and_load_data()
     vocab_len = len(lang.word2id)
+    total_samples = len(train_dataset) 
     
     # Instantiate the model
-    # emb_size = hid_size # for weight tying 
-    model = LM_LSTM_VariationalDropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
+    emb_size = hid_size # for weight tying 
+    model = LM_LSTM_weight_tying(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
     model.apply(init_weights)
     criterion_train = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"])
     criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reduction='sum')   
 
     # Instantiate the optimizer
-    optimizer = optim.AdamW(model.parameters(), lr=lr)
+    #optimizer = optim.AdamW(model.parameters(), lr=lr)
+    optimizer = NTAvSGD(model.parameters(), lr=lr, total_samples=total_samples, batch_size=256)
     
     # Train and evaluate the model
     result = train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criterion_train, criterion_eval, model, device, n_epochs, patience)

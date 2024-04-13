@@ -159,4 +159,4 @@ def preprocess_and_load_data():
     dev_loader = DataLoader(dev_dataset, batch_size=1024, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
     test_loader = DataLoader(test_dataset, batch_size=1024, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
 
-    return train_loader, dev_loader, test_loader, lang
+    return train_loader, dev_loader, test_loader, lang, train_dataset

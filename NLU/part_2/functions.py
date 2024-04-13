@@ -26,7 +26,8 @@ def train_loop(data, optimizer, criterion, model, clip=5):
         loss.backward() # Compute the gradient, deleting the computational graph
         # clip the gradient to avoid explosioning gradients
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
-        optimizer.step() # Update the weights
+        # optimizer.step() # Update the weights
+        optimizer.step(loss.item())
 
     return sum(loss_array)/sum(number_of_tokens)
 

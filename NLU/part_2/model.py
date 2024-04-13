@@ -99,12 +99,15 @@ class LM_LSTM_VariationalDropout(nn.Module):
     # incorporate a non-monotonic condition for triggering updates to the acceleration parameters
 
 class NTAvSGD(optim.Optimizer):
-    def __init__(self, params, lr, L, n=5, weight_decay=0):
+    def __init__(self, params, lr, total_samples, batch_size, n=5, weight_decay=0): # , L
         # lr    learning rate
         # n     non-monotone interval
         # L     logging interval
-        # L to be the number of iterations in an epoch and n = 5
-        defaults = dict(lr = lr, L = L, n = n, weight_decay = weight_decay, T = 0, t=0, logs=[])
+        
+        # set L to be the number of iterations in an epoch and n = 5
+        L = total_samples // batch_size
+        
+        defaults = dict(lr = lr,  L = L, n = n, weight_decay = weight_decay, T = 0, t=0, logs=[]) # L = L,
         super(NTAvSGD, self).__init__(params, defaults)
 
     def step(self, v):
@@ -118,8 +121,8 @@ class NTAvSGD(optim.Optimizer):
                     state['mu'] = 1
                     state['ax'] = torch.zeros_like(i.data) # initializing tensors with zeros
 
-                if state['k'] % group['L'] == 0 and group['T'] == 0: # if mod(k,L) == 0 and T = 0:
-                    if group['t']> group['n'] and v > min(group['logs'][:-group['n']]): # min l∈{0,··· ,t−n−1} logs[l]
+                if group['T'] == 0: # if mod(k,L) == 0 and T = 0:  
+                    if state['k'] % group['L'] == 0 and  group['t']> group['n'] and v > min(group['logs'][:-group['n']]): # min l∈{0,··· ,t−n−1} logs[l]
                         # group['T'] = self.state[next(iter(group['params']))]['k'] # first key of group['params']
                         group['T'] = state['k']
 
@@ -129,7 +132,8 @@ class NTAvSGD(optim.Optimizer):
 
 
                 # update
-                i.data.add_(-group['lr'], grad) # i.data = i.data - (lr * grad)
+                # i.data.add_(-group['lr'], grad) # i.data = i.data - (lr * grad)
+                i.data.add_(grad, alpha=-group['lr'])  # i.data = i.data + (-lr * grad)
 
                 if state['mu'] == 1:
                     state['ax'].copy_(i.data)
