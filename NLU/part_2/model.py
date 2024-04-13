@@ -99,18 +99,22 @@ class LM_LSTM_VariationalDropout(nn.Module):
     # incorporate a non-monotonic condition for triggering updates to the acceleration parameters
 
 class NTAvSGD(optim.Optimizer):
-    def __init__(self, params, lr, total_samples, batch_size, n=5, weight_decay=0): # , L
+    def __init__(self, params, lr, total_samples, batch_size, n=5, weight_decay=0): 
         # lr    learning rate
         # n     non-monotone interval
         # L     logging interval
         
-        # set L to be the number of iterations in an epoch and n = 5
+        # set L to be the number of iterations in an epoch and n = 5 (per paper https://arxiv.org/abs/1708.02182)
         L = total_samples // batch_size
         
-        defaults = dict(lr = lr,  L = L, n = n, weight_decay = weight_decay, T = 0, t=0, logs=[]) # L = L,
+        defaults = dict(lr=lr, L=L, n=n, weight_decay=weight_decay, T=0, t=0, logs=[], loss=None) 
         super(NTAvSGD, self).__init__(params, defaults)
 
-    def step(self, v):
+    def step(self, closure=None):
+        loss = None
+        if closure is not None:
+            loss = closure()
+
         for group in self.param_groups:
             for i in group['params']:
                 grad = i.grad.data
@@ -119,28 +123,27 @@ class NTAvSGD(optim.Optimizer):
                 if len(state) == 0:
                     state['k'] = 0
                     state['mu'] = 1
-                    state['ax'] = torch.zeros_like(i.data) # initializing tensors with zeros
-
-                if group['T'] == 0: # if mod(k,L) == 0 and T = 0:  
-                    if state['k'] % group['L'] == 0 and  group['t']> group['n'] and v > min(group['logs'][:-group['n']]): # min l∈{0,··· ,t−n−1} logs[l]
-                        # group['T'] = self.state[next(iter(group['params']))]['k'] # first key of group['params']
+                    state['ax'] = torch.zeros_like(i.data)
+                    
+                if group['T'] == 0: # if mod(k,L) == 0 and T = 0: 
+                    if (state['k'] % group['L'] == 0 and group['t'] > group['n'] and (group['loss'] is not None and min(group['logs'][:-group['n']]) is not None) and group['loss'] > min(group['logs'][:-group['n']])): # min l∈{0,··· ,t−n−1} logs[l]
                         group['T'] = state['k']
 
                 state['k'] += 1
-                group['logs'].append(v)
-                group['t']+=1
-
+                group['logs'].append(loss)
+                group['t'] += 1
 
                 # update
-                # i.data.add_(-group['lr'], grad) # i.data = i.data - (lr * grad)
-                i.data.add_(grad, alpha=-group['lr'])  # i.data = i.data + (-lr * grad)
+                i.data.add_(grad, alpha=-group['lr']) # i.data = i.data + (-lr * grad)
 
                 if state['mu'] == 1:
                     state['ax'].copy_(i.data)
                 else:
                     # update
-                    diff = (i.data.sub(state['ax'])).mul(state['mu'])  # (i.data - ax) * mu
-                    state['ax'].add_(diff)
+                    diff = (i.data.sub(state['ax'])).mul(state['mu'])
+                    state['ax'].add_(diff) # (i.data - ax) * mu
 
                 # update
                 state['mu'] = 1 / max(1, state['k'] - group['T'])
+
+        return loss
