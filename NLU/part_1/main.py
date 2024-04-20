@@ -5,6 +5,7 @@
 from functions import *
 from model import *
 from utils import *
+import sys
 
 # define parameters
 device = 'cuda:0'
@@ -40,7 +41,7 @@ def main():
             optimizer = optim.SGD(model.parameters(), lr=lr)
         else:
             print("RNN can be used only with SGD")
-            return: 
+            return
     elif model == "LSTM":
         if optimizer == "SGD":
             lr = 1.5
@@ -48,9 +49,9 @@ def main():
             optimizer = optim.SGD(model.parameters(), lr=lr)
         else:
             print("LSTM can be used only with SGD")
-            return: 
+            return
     elif model == "LSTM_dropout":
-        if optmizer == "SGD":
+        if optimizer == "SGD":
             lr = 1.3
             model = LM_LSTM_dropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
             optimizer = optim.SGD(model.parameters(), lr=lr)
@@ -60,7 +61,7 @@ def main():
             optimizer = optim.AdamW(model.parameters(), lr=lr)
         else:
             print("LSTM_dropout can be used only with SGD and AdamW")
-            return: 
+            return 
     else: 
         print("Usage: python3 main.py <model> <optimizer>")
         return
@@ -77,8 +78,8 @@ def main():
     
     print(result)
     
-    # path = 'model_bin/RNN.pt'
-    # torch.save(model.state_dict(), path)
+    path = 'model_bin/LSTM.pt'
+    torch.save(model.state_dict(), path)
     # To load the model you need to initialize it
     # model = LM_RNN(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
     # Then you load it
