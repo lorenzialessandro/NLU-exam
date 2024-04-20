@@ -65,7 +65,7 @@ class VarDropout(nn.Module):
     
     
 # =============== LSTM with variational dropout (weight tying) ===============
-    # the dropout mask is applied to he embedding layer, the LSTM layer and the output layer 
+    # the dropout mask is applied to the embedding layer and to the LSTM layer  
     # helps prevent overfitting in LSTMs and improve generalization performance
 class LM_LSTM_VariationalDropout(nn.Module):
     def __init__(self, emb_size, hidden_size, output_size, pad_index=0, out_dropout=0.4, emb_dropout=0.4, rnn_dropout = 0.4, n_layers=1):
