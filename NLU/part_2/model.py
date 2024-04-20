@@ -64,19 +64,22 @@ class VarDropout(nn.Module):
     
     
     
-# =============== LSTM with variational dropout ===============
+# =============== LSTM with variational dropout (weight tying) ===============
     # the dropout mask is applied to he embedding layer, the LSTM layer and the output layer 
     # helps prevent overfitting in LSTMs and improve generalization performance
 class LM_LSTM_VariationalDropout(nn.Module):
     def __init__(self, emb_size, hidden_size, output_size, pad_index=0, out_dropout=0.4, emb_dropout=0.4, rnn_dropout = 0.4, n_layers=1):
         super(LM_LSTM_VariationalDropout, self).__init__()
         self.embedding = nn.Embedding(output_size, emb_size, padding_idx=pad_index)
-        self.rnn = nn.LSTM(emb_size, hidden_size, n_layers, bidirectional=False)
+        self.rnn = nn.LSTM(emb_size, hidden_size, n_layers, bidirectional=False, batch_first=True)
         self.pad_token = pad_index
-        self.output = nn.Linear(hidden_size, output_size)
+        
         self.dropout_emb = VarDropout(emb_dropout) # variational dropout
-        self.dropout_out = VarDropout(out_dropout) # variational dropout
         self.dropout_rnn = VarDropout(rnn_dropout) # variational dropout
+
+        self.output = nn.Linear(hidden_size, output_size, bias=False) # embedding weights for the output layer
+          # bias=False to remove any additional parameters that might introduce unnecessary complexity
+        self.output.weight = self.embedding.weight # weight tying
 
     def forward(self, input_sequence):
         emb = self.embedding(input_sequence)
@@ -84,9 +87,7 @@ class LM_LSTM_VariationalDropout(nn.Module):
         rnn_out, _  = self.rnn(emb)
         rnn_out = self.dropout_rnn(rnn_out)
         output = self.output(rnn_out).permute(0, 2, 1)
-        output = self.dropout_out(output)
         return output
-    
     
     
 # =============== =============== ===============

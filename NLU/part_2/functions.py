@@ -6,6 +6,7 @@ import math
 import numpy as np
 import copy
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter # tensorboard
 
 clip = 5
 
@@ -78,6 +79,8 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
     best_ppl = math.inf
     best_model = None
     pbar = tqdm(range(1,n_epochs))
+ 
+    writer = SummaryWriter(log_dir='runs/VariationalDropout(NTAvSGD)') # TensorBoard
     
     for epoch in pbar:
         loss = train_loop(train_loader, optimizer, criterion_train, model, clip=5)
@@ -88,6 +91,10 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
             ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
             losses_dev.append(np.asarray(loss_dev).mean())
             pbar.set_description("PPL: %f" % ppl_dev)
+
+            # Add scalars to TensorBoard
+            writer.add_scalar('Loss/Train', np.asarray(loss).mean(), epoch)
+            writer.add_scalar('PPL/Dev', ppl_dev, epoch)
 
 
             if  ppl_dev < best_ppl: # the lower, the better
@@ -100,6 +107,8 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
             if patience <= 0: # Early stopping with patience
                 break # Not nice but it keeps the code clean
 
+    # Close TensorBoard writer
+    writer.close()
 
     best_model.to(device)
     final_ppl,  _ = eval_loop(test_loader, criterion_eval, best_model)
