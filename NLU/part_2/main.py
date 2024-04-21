@@ -70,7 +70,7 @@ def main():
     
     print(result)
     
-    path = 'model_bin/LSTM_weight_tying.pt'
+    path = 'model_bin/LSTM_VariationalDropoutNTAvSGD.pt'
     torch.save(model.state_dict(), path)
 
     # To load the model you need to initialize it
