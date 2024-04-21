@@ -80,7 +80,7 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
     best_model = None
     pbar = tqdm(range(1,n_epochs))
     
-    writer = SummaryWriter(log_dir='runs/LSTM(SGD)') # TensorBoard
+    # writer = SummaryWriter(log_dir='runs/LSTM_dropout(AdamW)') # TensorBoard
     
     for epoch in pbar:
         loss = train_loop(train_loader, optimizer, criterion_train, model, clip=5)

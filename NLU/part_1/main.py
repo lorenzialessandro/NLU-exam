@@ -16,8 +16,6 @@ patience = 3
 
 def main():
     
-    lr = 1.5          # learning rate
-    
     # Preprocess and load data
     train_loader, dev_loader, test_loader, lang = preprocess_and_load_data()
     vocab_len = len(lang.word2id)
@@ -55,7 +53,7 @@ def main():
             lr = 1.3
             model = LM_LSTM_dropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
             optimizer = optim.SGD(model.parameters(), lr=lr)
-        elif optmizer == "AdamW":
+        elif optimizer == "AdamW":
             lr = 0.001
             model = LM_LSTM_dropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
             optimizer = optim.AdamW(model.parameters(), lr=lr)
@@ -78,8 +76,8 @@ def main():
     
     print(result)
     
-    path = 'model_bin/LSTM.pt'
-    torch.save(model.state_dict(), path)
+    # path = 'model_bin/LSTM_dropout(AdamW).pt'
+    # torch.save(model.state_dict(), path)
     # To load the model you need to initialize it
     # model = LM_RNN(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
     # Then you load it
