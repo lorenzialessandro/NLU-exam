@@ -37,6 +37,7 @@ def main():
 
     if model == "LSTM_weight_tying":
         if optimizer == "SGD":
+            lr = 2
             model = LM_LSTM_VariationalDropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
             optimizer = optim.SGD(model.parameters(), lr=lr)
         else:
@@ -44,9 +45,11 @@ def main():
             return
     elif model == "LSTM_VariationalDropout":
         if optimizer == "SGD":
+            lr = 1.5
             model = LM_LSTM_VariationalDropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
             optimizer = optim.SGD(model.parameters(), lr=lr)
         elif optimizer == "NTAvSGD":
+            lr = 1.3
             model = LM_LSTM_VariationalDropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
             optimizer = NTAvSGD(model.parameters(), lr=lr, total_samples=total_samples, batch_size=256)
         else:
@@ -67,7 +70,7 @@ def main():
     
     print(result)
     
-    path = 'model_bin/LSTM_VariationalDropout_NTAvSGD.pt'
+    path = 'model_bin/LSTM_weight_tying.pt'
     torch.save(model.state_dict(), path)
 
     # To load the model you need to initialize it
