@@ -11,49 +11,83 @@ import sys
 device = 'cuda:0'
 hid_size = 200    # size of hidden layer
 emb_size = 300    # size of embedding layer
-n_epochs = 200
-runs = 5
+n_epochs = 100
 patience = 3
 
-
-lr = 0.0001 # learning rate
-clip = 5 # Clip the gradient
-
-
-
 def main():
+    
     # Preprocess and load data
     train_loader, dev_loader, test_loader, lang = preprocess_and_load_data()
-
-    out_slot = len(lang.slot2id)
-    out_int = len(lang.intent2id)
     vocab_len = len(lang.word2id)
 
+    if len(sys.argv) < 3:
+        print("Usage: python3 main.py <model> <optimizer>")
+        return
 
-    # Multiple runs
-    slot_f1s, intent_acc = [], []
-    for x in tqdm(range(0, runs)):
-        model = ModelIAS(hid_size, out_slot, out_int, emb_size, 
-                     vocab_len, pad_index=PAD_TOKEN).to(device)
-        model.apply(init_weights)
+    model = sys.argv[1]
+    optimizer = sys.argv[2]
 
-        optimizer = optim.Adam(model.parameters(), lr=lr)
-        criterion_slots = nn.CrossEntropyLoss(ignore_index=PAD_TOKEN)
-        criterion_intents = nn.CrossEntropyLoss()
+    # RNN with SGD
+    # LSTM with SGD
+    # LM_LSTM_dropout with SGD
+    # LM_LSTM_dropout with AdamW
 
-        results_test, intent_test = train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criterion_train, criterion_eval, model, device, n_epochs, patience)
+    if model == "RNN":
+        if optimizer == "SGD":
+            lr = 1.5
+            model = LM_RNN(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
+            optimizer = optim.SGD(model.parameters(), lr=lr)
+        else:
+            print("RNN can be used only with SGD")
+            return
+    elif model == "LSTM":
+        if optimizer == "SGD":
+            lr = 1.5
+            model = LM_LSTM(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
+            optimizer = optim.SGD(model.parameters(), lr=lr)
+        else:
+            print("LSTM can be used only with SGD")
+            return
+    elif model == "LSTM_dropout":
+        if optimizer == "SGD":
+            lr = 1.3
+            model = LM_LSTM_dropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
+            optimizer = optim.SGD(model.parameters(), lr=lr)
+        elif optimizer == "AdamW":
+            lr = 0.001
+            model = LM_LSTM_dropout(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
+            optimizer = optim.AdamW(model.parameters(), lr=lr)
+        else:
+            print("LSTM_dropout can be used only with SGD and AdamW")
+            return 
+    else: 
+        print("Usage: python3 main.py <model> <optimizer>")
+        return
 
-        intent_acc.append(intent_test['accuracy'])
-        slot_f1s.append(results_test['total']['f'])
 
-    slot_f1s = np.asarray(slot_f1s)
-    intent_acc = np.asarray(intent_acc)
-    print('Slot F1', round(slot_f1s.mean(),3), '+-', round(slot_f1s.std(),3))
-    print('Intent Acc', round(intent_acc.mean(), 3), '+-', round(slot_f1s.std(), 3))
-    return round(slot_f1s.mean(),3), round(slot_f1s.std(),3), round(intent_acc.mean(), 3), round(slot_f1s.std(), 3)
+
+    
+    model.apply(init_weights)
+    criterion_train = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"])
+    criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reduction='sum')   
+    
+    # Train and evaluate the model
+    result = train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criterion_train, criterion_eval, model, device, n_epochs, patience)
+    
+    print(result)
+    
+    # path = 'model_bin/LSTM_dropout(AdamW).pt'
+    # torch.save(model.state_dict(), path)
+    # To load the model you need to initialize it
+    # model = LM_RNN(emb_size, hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
+    # Then you load it
+    # model.load_state_dict(torch.load(path))
+        
 
 
 if __name__ == "__main__":
     #Wrtite the code to load the datasets and to run your functions
     # Print the results
+
     main()
+
