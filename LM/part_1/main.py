@@ -26,6 +26,7 @@ def main():
 
     model = sys.argv[1]
     optimizer = sys.argv[2]
+    lr = 0.01 # default
 
     # RNN with SGD
     # LSTM with SGD
@@ -72,7 +73,7 @@ def main():
     criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reduction='sum')   
     
     # Train and evaluate the model
-    result = train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criterion_train, criterion_eval, model, device, n_epochs, patience)
+    result = train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criterion_train, criterion_eval, model, device, n_epochs, patience, lr)
     
     print(result)
     

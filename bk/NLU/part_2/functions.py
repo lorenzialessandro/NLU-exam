@@ -1,7 +1,6 @@
 # Add the class of your model only
 # Here is where you define the architecture of your model using pytorch
 
-#what should i put in model.py then???
 import matplotlib.pyplot as plt
 import torch
 import math

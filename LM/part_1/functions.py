@@ -6,7 +6,8 @@ import math
 import numpy as np
 import copy
 from tqdm import tqdm
-from torch.utils.tensorboard import SummaryWriter # tensorboard
+# from torch.utils.tensorboard import SummaryWriter # tensorboard
+import wandb 
 
 clip = 5
 
@@ -72,7 +73,7 @@ def init_weights(mat):
                     
                     
 # =============== Training and Evaluation Loops ===============                 
-def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criterion_train, criterion_eval, model, device, n_epochs=100, patience=3):
+def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criterion_train, criterion_eval, model, device, n_epochs=100, patience=3, lr=0.01):
     losses_train = []
     losses_dev = []
     sampled_epochs = []
@@ -81,6 +82,20 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
     pbar = tqdm(range(1,n_epochs))
     
     # writer = SummaryWriter(log_dir='runs/LSTM_dropout(AdamW)') # TensorBoard
+    wandb.init(
+        # set the wandb project where this run will be logged
+        project="NLU-exam",
+        name = "RNN with SGD",
+
+        # track hyperparameters and run metadata
+        config={
+        "lr": lr,
+        "model": model,
+        "optimizer" : optimizer,
+        "epochs": n_epochs,
+        "patience": patience
+        }
+    )   
     
     for epoch in pbar:
         loss = train_loop(train_loader, optimizer, criterion_train, model, clip=5)
@@ -93,8 +108,11 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
             pbar.set_description("PPL: %f" % ppl_dev)
 
             # Add scalars to TensorBoard
-            writer.add_scalar('Loss/Train', np.asarray(loss).mean(), epoch)
-            writer.add_scalar('PPL/Dev', ppl_dev, epoch)
+            #writer.add_scalar('Loss/Train', np.asarray(loss).mean(), epoch)
+            #writer.add_scalar('PPL/Dev', ppl_dev, epoch)
+
+            # log metrics to wandb
+            wandb.log({'Loss/Train': np.asarray(loss).mean(), 'PPL/Dev': ppl_dev, 'epoch': epoch})
 
 
             if  ppl_dev < best_ppl: # the lower, the better

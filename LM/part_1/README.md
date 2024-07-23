@@ -5,13 +5,11 @@ python3 main.py <model> <optmizer>
 ```
 
 The available models are:
-- `RNN`
-	- optimizer `SGD`
-- `LSTM`  
-	- optimizer `RNN`
+- `RNN` with optimizer `SGD`
+- `LSTM` (base) with optimizer `RNN`
 - `LSTM_dropout`
-	1. optimizer `SGD`
-    2. optimizer `AdamW`
+	- with optimizer `SGD` or
+    - with optimizer `AdamW`
 
 So we possible combinations are:
 
