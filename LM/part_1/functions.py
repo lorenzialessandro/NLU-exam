@@ -82,6 +82,7 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
     pbar = tqdm(range(1,n_epochs))
     
     # writer = SummaryWriter(log_dir='runs/LSTM_dropout(AdamW)') # TensorBoard
+    wandb.login(key='b538d8603f23f0c22e0518a7fcef14eef2620e7d') #TODO change 
     wandb.init(
         # set the wandb project where this run will be logged
         project="NLU-exam",
@@ -90,8 +91,8 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
         # track hyperparameters and run metadata
         config={
         "lr": lr,
-        "model": model,
-        "optimizer" : optimizer,
+        "model": model.__class__.__name__,
+        "optimizer" : optimizer.__class__.__name__,
         "epochs": n_epochs,
         "patience": patience
         }
@@ -125,10 +126,11 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
             if patience <= 0: # Early stopping with patience
                 break # Not nice but it keeps the code clean
 
-
     best_model.to(device)
     final_ppl,  _ = eval_loop(test_loader, criterion_eval, best_model)
     print('Test ppl: ', final_ppl)
+    wandb.log({'Final PPL/Test': final_ppl})
+    wandb.finish() 
     return final_ppl
 
 
