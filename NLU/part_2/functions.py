@@ -5,6 +5,8 @@
 # Here is where you define the architecture of your model using pytorch
 import math
 import numpy as np
+import torch
+import torch.nn as nn
 import copy
 from tqdm import tqdm
 from conll import evaluate
@@ -15,7 +17,7 @@ clip = 5
 # =============== Model Training and Evaluation Functions ===============
 
 # Performs the training loop.
-def training_loop(model, train_loader, optimizer, criterion_intents, criterion_slots, clip):
+def training_loop(model, train_loader, optimizer, criterion_intents, criterion_slots, clip, device='cuda:0'):
     model.train()
     total_loss = 0.0
     for batch in train_loader:
@@ -76,7 +78,7 @@ def process_token(token):
     return res_token
 
 # Performs the evaluation loop.
-def evaluate_loop(model, dev_loader, criterion_intents, criterion_slots, lang, tokenizer):
+def evaluate_loop(model, dev_loader, criterion_intents, criterion_slots, lang, tokenizer, device='cuda:0'):
     model.eval()
 
     total_loss = 0.0
@@ -196,21 +198,23 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
     losses_dev = []
     sampled_epochs = []
     best_f1 = 0
+    
+    pbar = tqdm(range(1,n_epochs))
 
-    # writer = SummaryWriter(log_dir='runs/LSTM(SGD)') # TensorBoard
 
-    for epoch in tqdm(range(1,n_epochs)):
+    for epoch in pbar:
         # print(f'Epoch {epoch}')
         loss = training_loop(model, train_loader, optimizer,
                         criterion_intents, criterion_slots, clip=clip)
 
-        if epoch % 5 == 0 or epoch == 1: # We check the performance every 5 epochs
+        if epoch % 1 == 0: 
             sampled_epochs.append(epoch)
             losses_train.append(np.asarray(loss).mean())
             results_dev, intent_res, loss_dev = evaluate_loop(model, dev_loader, criterion_intents, criterion_slots, lang, tokenizer)
             losses_dev.append(np.asarray(loss_dev).mean())
 
             f1 = results_dev['total']['f']
+            pbar.set_description("f1: %f" %f1)
             # For decreasing the patience you can also use the average between slot f1 and intent accuracy
             if f1 > best_f1:
                 best_f1 = f1
@@ -224,6 +228,4 @@ def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criteri
         # print('Slot F1: ', results_dev['total']['f'])
 
     results_test, intent_test, _ = evaluate_loop(model, test_loader, criterion_intents, criterion_slots, lang, tokenizer)
-    print('Slot F1: ', results_test['total']['f'])
-    print('Intent Accuracy:', intent_test['accuracy'])
     return results_test, intent_test

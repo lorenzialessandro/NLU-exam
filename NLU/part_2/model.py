@@ -12,7 +12,7 @@ class BERTMultiTaskModel(nn.Module):
         for param in self.bert.parameters():
             param.requires_grad = False
 
-        self.dropout = nn.Dropout(0.2)
+        self.dropout = nn.Dropout(0.1)
 
         self.intent_classifier = nn.Linear(self.bert.config.hidden_size, num_intents)
         self.slot_classifier = nn.Linear(self.bert.config.hidden_size, num_slots)

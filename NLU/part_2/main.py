@@ -12,13 +12,11 @@ from transformers import BertTokenizer, BertModel
 
 # define parameters
 device = 'cuda:0'
-hid_size = 200    # size of hidden layer
-emb_size = 300    # size of embedding layer
-n_epochs = 200
-runs = 5
+n_epochs = 100
+runs = 1
 patience = 3
 
-lr = 0.01 # learning rate
+lr = 0.001 # learning rate
 clip = 5 # Clip the gradient
 
 
