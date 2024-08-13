@@ -101,7 +101,7 @@ def evaluate_loop(model, dev_loader, criterion_intents, criterion_slots, lang, t
             intent_loss = criterion_intents(intent_logits, intent_labels)
 
             # Compute loss for slots
-            slot_loss = criterion_slots(slot_logits.view(-1, slot_logits.shape[-1]), slots.view(-1))
+            slot_loss = criterion_slots(slot_logits.view(-1, model.num_slots), slots.view(-1))
 
 
             # Total loss
@@ -125,27 +125,46 @@ def evaluate_loop(model, dev_loader, criterion_intents, criterion_slots, lang, t
 
             for idx, seq in enumerate(output_slots): # check all this cycle
 
-              slots_len = batch['slots_len'].tolist()[idx]
+                slots_len = batch['slots_len'].tolist()[idx]
 
-              token = tokenizer.decode(input_ids[idx]) # decode the token
+                token = tokenizer.decode(input_ids[idx]) # decode the token
 
-              slots_ids = slots[idx].tolist() # get ids
-              slots_labels = [lang.id2slot[elem] for elem in slots_ids[:slots_len]] # get labels
-              slots_labels = slots_labels[1:] # [CLS]
+                slots_ids = slots[idx].tolist() # get ids
+                slots_labels = [lang.id2slot[elem] for elem in slots_ids[:slots_len]] # get labels
+                slots_labels = slots_labels[1:] # [CLS]
 
-              next_slots = seq[1:slots_len].tolist()
-              token = token.split()
+                next_slots = seq[1:slots_len].tolist()
+                token = token.split()
 
-              res_token = process_token(token)
+                res_token = []
+                tmp_string = ""
 
-              # check
-              while len(res_token) < len(slots_ids):
-                res_token.append(lang.slot2id['pad'])
+                for word in token:
+                    if "'" in word:
+                        for letter in word:
+                            if letter != "'":
+                                tmp_string += letter
+                            else:
+                                if tmp_string:
+                                    res_token.append(tmp_string)
+                                res_token.append("'")
+                                res_token.append('O')
+                                tmp_string = ""
+                        if tmp_string:
+                            res_token.append(tmp_string)
+                        tmp_string = ""
+                    else:
+                        res_token.append(word)
 
-              res_token = res_token[1:] # [CLS]
 
-              ref_slots.append([(res_token[i], j) for i, j in enumerate(slots_labels)])
-              hyp_slots.append([(res_token[i], lang.id2slot[j]) for i, j in enumerate(next_slots)])
+                # check
+                while len(res_token) < len(slots_ids):
+                    res_token.append(lang.slot2id['pad'])
+
+                res_token = res_token[1:] # [CLS]
+
+                ref_slots.append([(res_token[i], j) for i, j in enumerate(slots_labels)])
+                hyp_slots.append([(res_token[i], lang.id2slot[j]) for i, j in enumerate(next_slots)])
 
 
 

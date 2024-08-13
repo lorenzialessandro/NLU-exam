@@ -7,6 +7,8 @@ class BERTMultiTaskModel(nn.Module):
     def __init__(self, bert_model, num_intents, num_slots):
         super(BERTMultiTaskModel, self).__init__()
         self.bert = bert_model
+        self.num_intents = num_intents
+        self.num_slots = num_slots
 
         # freeze BERT parameters
         for param in self.bert.parameters():
