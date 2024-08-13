@@ -74,8 +74,7 @@ class ModelIAS_bidirectional(nn.Module):
         self.utt_encoder = nn.LSTM(emb_size, hid_size, n_layer, bidirectional=True, batch_first=True) # + bidirectional=True
         self.slot_out = nn.Linear(hid_size * 2, out_slot)  # + Double the hid_size for bidirectional LSTM
         self.intent_out = nn.Linear(hid_size * 2, out_int)  # + Double the hid_size for bidirectional LSTM
-        # Dropout layer How/Where do we apply it?
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(0.2)
 
     def forward(self, utterance, seq_lengths):
         # utterance.size() = batch_size X seq_len
@@ -119,15 +118,19 @@ class ModelIAS_dropout(nn.Module):
         self.embedding = nn.Embedding(vocab_len, emb_size, padding_idx=pad_index)
 
         self.utt_encoder = nn.LSTM(emb_size, hid_size, n_layer, bidirectional=True, batch_first=True)
-        self.dropout = nn.Dropout(0.5)  # + Adding dropout with 50% probability
 
         self.slot_out = nn.Linear(hid_size * 2, out_slot)  # Double the hid_size for bidirectional LSTM
         self.intent_out = nn.Linear(hid_size * 2, out_int)  # Double the hid_size for bidirectional LSTM
+
+        self.dropout = nn.Dropout(0.2) 
 
     def forward(self, utterance, seq_lengths):
         # utterance.size() = batch_size X seq_len
         utt_emb = self.embedding(utterance) # utt_emb.size() = batch_size X seq_len X emb_size
 
+        # apply dropout to embeddings
+        utt_emb = self.dropout(utt_emb) # + Apply dropout to the LSTM embeddings
+         
         # pack_padded_sequence avoid computation over pad tokens reducing the computational cost
 
         packed_input = pack_padded_sequence(utt_emb, seq_lengths.cpu().numpy(), batch_first=True)
@@ -137,11 +140,8 @@ class ModelIAS_dropout(nn.Module):
         # Unpack the sequence
         utt_encoded, input_sizes = pad_packed_sequence(packed_output, batch_first=True)
 
-        # Apply dropout to the unpacked sequence
+        # apply dropout to the unpacked sequence
         utt_encoded = self.dropout(utt_encoded) # + Apply dropout to the LSTM output
-          # applying dropout to utt_encoded ensures that dropout is applied only to the relevant elements of the sequence,
-          # avoiding any unwanted effects on the padded elements and ensuring that the model can learn effectively
-          # from the sequence data.
 
         # Concatenate the forward and backward hidden states
         last_hidden = torch.cat((last_hidden[-2,:,:], last_hidden[-1,:,:]), dim=1)
