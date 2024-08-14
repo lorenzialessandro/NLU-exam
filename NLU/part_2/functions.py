@@ -134,37 +134,37 @@ def evaluate_loop(model, dev_loader, criterion_intents, criterion_slots, lang, t
                 slots_labels = slots_labels[1:] # [CLS]
 
                 next_slots = seq[1:slots_len].tolist()
-                token = token.split()
+                token_split = token.split()
 
-                res_token = []
-                tmp_string = ""
+                # Initialize an empty list to store the corrected tokens
+                decoded_token = []
 
-                for word in token:
-                    if "'" in word:
-                        for letter in word:
-                            if letter != "'":
-                                tmp_string += letter
-                            else:
-                                if tmp_string:
-                                    res_token.append(tmp_string)
-                                res_token.append("'")
-                                res_token.append('O')
-                                tmp_string = ""
-                        if tmp_string:
-                            res_token.append(tmp_string)
-                        tmp_string = ""
+                # Iterate over the split tokens
+                for token in token_split:
+                    # Check if the token is just a single quote (or any other unwanted extra token)
+                    if token == "'":
+                        # If the last token in the list ends with an alphabetic character, merge them
+                        if decoded_token and decoded_token[-1].isalpha():
+                            decoded_token[-1] += token
+                        else:
+                            # Otherwise, add 'O' to indicate an unwanted token
+                            decoded_token.append('O')
                     else:
-                        res_token.append(word)
+                        # If the token is valid, just add it to the corrected list
+                        decoded_token.append(token)
+
+                # Now decoded_token contains the corrected tokens
+
 
 
                 # check
-                while len(res_token) < len(slots_ids):
-                    res_token.append(lang.slot2id['pad'])
+                while len(decoded_token) < len(slots_ids):
+                    decoded_token.append(lang.slot2id['pad'])
 
-                res_token = res_token[1:] # [CLS]
+                decoded_token = decoded_token[1:] # [CLS]
 
-                ref_slots.append([(res_token[i], j) for i, j in enumerate(slots_labels)])
-                hyp_slots.append([(res_token[i], lang.id2slot[j]) for i, j in enumerate(next_slots)])
+                ref_slots.append([(decoded_token[i], j) for i, j in enumerate(slots_labels)])
+                hyp_slots.append([(decoded_token[i], lang.id2slot[j]) for i, j in enumerate(next_slots)])
 
 
 
