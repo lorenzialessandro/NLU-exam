@@ -54,29 +54,6 @@ def training_loop(model, train_loader, optimizer, criterion_intents, criterion_s
     return total_loss / len(train_loader)
 
 
-# handle tokenizer  quotes (')
-# used in validation loop
-def process_token(token):
-    res_token = []
-
-    for word in token:
-        if "'" in word:
-            tmp = ""
-            for w in word:
-                if w != "'":
-                    tmp += w
-                else:
-                    if tmp:
-                        res_token.append(tmp)
-                        tmp = ""
-                    res_token.append('O')
-            if tmp:
-                res_token.append(tmp)
-        else:
-            res_token.append(word)
-
-    return res_token
-
 # Performs the evaluation loop.
 def evaluate_loop(model, dev_loader, criterion_intents, criterion_slots, lang, tokenizer, device='cuda:0'):
     model.eval()
