@@ -12,216 +12,184 @@ from tqdm import tqdm
 from conll import evaluate
 from sklearn.metrics import classification_report
 
-clip = 5
+#TODO: add imports for run function
+#TODO: add the returns for the run function
 
 # =============== Model Training and Evaluation Functions ===============
 
-# Performs the training loop.
-def training_loop(model, train_loader, optimizer, criterion_intents, criterion_slots, clip, device='cuda:0'):
+# Training loop
+def train_loop(data, optimizer, model, lang, criterion_intents, criterion_slots, clip=5):
     model.train()
-    total_loss = 0.0
-    for batch in train_loader:
-        optimizer.zero_grad()
+    loss_array = []
+    for sample in data:
+        optimizer.zero_grad() # Zeroing the gradient
 
-        # Extract input and target data
-        input_ids = batch['utterances'].to(device)
-        attention_mask = torch.stack(batch['attention_mask']).to(device) # check
-        intent_targets = batch['intents'].to(device)
-        slot_targets = batch['y_slots'].to(device)
+        slots, intents = model(sample['utterances'], sample['attention_mask'], sample['mapping_slots'])
 
-        # Forward pass
-        intent_logits, slot_logits = model(input_ids, attention_mask)
+        # calculate the loss on the intents
+        loss_intent = criterion_intents(intents, sample['intents'])
+        # calculate the loss on the slots
+        loss_slot = criterion_slots(slots, sample['y_slots'])
 
-        # Compute loss
-        intent_loss = criterion_intents(intent_logits, intent_targets) # loss for intents
-        slot_loss = criterion_slots(slot_logits.view(-1, slot_logits.shape[-1]), slot_targets.view(-1)) # loss for slots
+        loss = loss_intent + loss_slot # In joint training we sum the losses.
+                                    # Is there another way to do that?
 
+        loss_array.append(loss.item())
 
-        loss = intent_loss + slot_loss # total loss
+        loss.backward() # Compute the gradient, deleting the computational graph
+        # clip the gradient to avoid exploding gradients
+        torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
+        optimizer.step() # Update the weights
 
-        # print(f"Intent Loss: {intent_loss.item()}, Slot Loss: {slot_loss.item()}")
+    # print(f"train_loop > loss_array ", loss_array)
+    return loss_array
 
-        total_loss += loss.item()
+# Evaluation loop
+def eval_loop(data, model, lang, criterion_intents, criterion_slots):
 
-        # print(f"Total Loss: {total_loss}")
-
-        # Backward pass
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), clip) # clipping
-        optimizer.step()
-
-    # average training loss
-    return total_loss / len(train_loader)
-
-
-# Performs the evaluation loop.
-def evaluate_loop(model, dev_loader, criterion_intents, criterion_slots, lang, tokenizer, device='cuda:0'):
     model.eval()
+    loss_array = []
 
-    total_loss = 0.0
     ref_intents = []
     hyp_intents = []
+
     ref_slots = []
     hyp_slots = []
+    #softmax = nn.Softmax(dim=1) # Use Softmax if you need the actual probability
+    with torch.no_grad(): # It used to avoid the creation of computational graph
+        for sample in data:
+            slots, intents = model(sample['utterances'], sample['attention_mask'], sample['mapping_slots'])
 
-    with torch.no_grad():
+            # calculate the loss on the intents
+            loss_intent = criterion_intents(intents, sample['intents'])
+            # calculate the loss on the slots
+            loss_slot = criterion_slots(slots, sample['y_slots'])
 
-        for batch in dev_loader:
-            input_ids = batch['utterances'].to(device)
-            attention_mask = torch.stack(batch['attention_mask']).to(device) # check
-            intent_labels = batch['intents'].to(device)
-            slots = batch['y_slots'].to(device)
-
-            intent_logits, slot_logits = model(input_ids, attention_mask)
-
-            # Compute loss for intents
-            intent_loss = criterion_intents(intent_logits, intent_labels)
-
-            # Compute loss for slots
-            slot_loss = criterion_slots(slot_logits.view(-1, model.num_slots), slots.view(-1))
-
-
-            # Total loss
-            loss = intent_loss + slot_loss
-
-            total_loss += loss.item()
+            loss = loss_intent + loss_slot # In joint training we sum the losses.
+                                        # Is there another way to do that?
+            loss_array.append(loss.item())
 
             # Intent inference
-            out_intents = [lang.id2intent[x] for x in torch.argmax(intent_logits, dim=1).tolist()]
-            gt_intents = [lang.id2intent[x] for x in intent_labels.tolist()]
+            # Get the highest probable class
+            out_intents = [lang.id2intent[x]
+                           for x in torch.argmax(intents, dim=1).tolist()]
+            gt_intents = [lang.id2intent[x] for x in sample['intents'].tolist()]
             ref_intents.extend(gt_intents)
             hyp_intents.extend(out_intents)
 
             # Slot inference
-            output_slots = torch.argmax(slot_logits, dim=2)
+            ref_slot = []
+            hyp_slot = []
+            output_slots = torch.argmax(slots, dim=1)
+            for id_seq, seq in enumerate(output_slots):
+                length = sample['slots_len'][id_seq].tolist()
+                utterance = sample['sentence'][id_seq]
 
-            #for i in range(output_slots.size(0)):
-                #for j in range(output_slots.size(1)):
-                    #ref_slots.append(lang.id2slot[slot_labels[i][j].item()])
-                    #hyp_slots.append(lang.id2slot[output_slots[i][j].item()])
+                gt_ids = sample['y_slots'][id_seq].tolist()
+                gt_slots = [lang.id2slot[elem] for elem in gt_ids[:length]]
 
-            for idx, seq in enumerate(output_slots): # check all this cycle
+                to_decode = seq[:length].tolist()
 
-                slots_len = batch['slots_len'].tolist()[idx]
+                # compute the reference slots
+                ref_slot.append([(utterance[id_el], elem) for id_el, elem in enumerate(gt_slots)])
 
-                token = tokenizer.decode(input_ids[idx]) # decode the token
+                # compute the hypothesis slots
+                tmp_seq = []
+                for id_el, elem in enumerate(to_decode):
+                    tmp_seq.append((utterance[id_el], lang.id2slot[elem]))
+                hyp_slot.append(tmp_seq)
+            ref_slots.extend(ref_slot)
+            hyp_slots.extend(hyp_slot)
 
-                slots_ids = slots[idx].tolist() # get ids
-                slots_labels = [lang.id2slot[elem] for elem in slots_ids[:slots_len]] # get labels
-                slots_labels = slots_labels[1:] # [CLS]
-
-                next_slots = seq[1:slots_len].tolist()
-                token_split = token.split()
-
-                # Initialize an empty list to store the corrected tokens
-                decoded_token = []
-
-                # Iterate over the split tokens
-                for token in token_split:
-                    # Check if the token is just a single quote (or any other unwanted extra token)
-                    if token == "'":
-                        # If the last token in the list ends with an alphabetic character, merge them
-                        if decoded_token and decoded_token[-1].isalpha():
-                            decoded_token[-1] += token
-                        else:
-                            # Otherwise, add 'O' to indicate an unwanted token
-                            decoded_token.append('O')
-                    else:
-                        # If the token is valid, just add it to the corrected list
-                        decoded_token.append(token)
-
-                # Now decoded_token contains the corrected tokens
-
-
-
-                # check
-                while len(decoded_token) < len(slots_ids):
-                    decoded_token.append(lang.slot2id['pad'])
-
-                decoded_token = decoded_token[1:] # [CLS]
-
-                ref_slots.append([(decoded_token[i], j) for i, j in enumerate(slots_labels)])
-                hyp_slots.append([(decoded_token[i], lang.id2slot[j]) for i, j in enumerate(next_slots)])
-
-
-
+    # Compute the F1 score for the slots
     try:
-        # Evaluate slot filling results
         results = evaluate(ref_slots, hyp_slots)
     except Exception as ex:
-        # Handle exceptions
-        print("Warning:", ex)
-        # Print the set difference between reference and predicted slots
-        ref_set = set([x[1] for x in ref_slots])
-        hyp_set = set([x[1] for x in hyp_slots])
-        print("Difference in reference and predicted slots:", hyp_set.difference(ref_set))
-        results = {"total": {"f": 0}}
+        # Sometimes the model predicts a class that is not in REF
+        print("\nWarning:", ex)
+        ref_s = set([x[1] for x in ref_slots])
+        hyp_s = set([x[1] for x in hyp_slots])
+        print(hyp_s.difference(ref_s))
+        results = {"total":{"f":0}}
 
-    # Generate classification report for intents
+    # Compute the classification report for the intents
     report_intent = classification_report(ref_intents, hyp_intents,
-                                           zero_division=False, output_dict=True)
+                                          zero_division=False, output_dict=True)
 
-    # Calculate average validation loss
-    avg_dev_loss = total_loss / len(dev_loader)
-
-    return results, report_intent, avg_dev_loss
-
-# Initializes the weights of the model. It is called during model initialization to set the initial weights
-def init_weights(mat):
-    for m in mat.modules():
-        if type(m) in [nn.GRU, nn.LSTM, nn.RNN]:
-            for name, param in m.named_parameters():
-                if 'weight_ih' in name:
-                    for idx in range(4):
-                        mul = param.shape[0]//4
-                        torch.nn.init.xavier_uniform_(param[idx*mul:(idx+1)*mul])
-                elif 'weight_hh' in name:
-                    for idx in range(4):
-                        mul = param.shape[0]//4
-                        torch.nn.init.orthogonal_(param[idx*mul:(idx+1)*mul])
-                elif 'bias' in name:
-                    param.data.fill_(0)
-        else:
-            if type(m) in [nn.Linear]:
-                torch.nn.init.uniform_(m.weight, -0.01, 0.01)
-                if m.bias != None:
-                    m.bias.data.fill_(0.01)
+    return results, report_intent, loss_array
 
 
-# =============== Training and Evaluation Loops ===============
-def train_and_evaluate(train_loader, dev_loader, test_loader, optimizer, criterion_intents, criterion_slots, model, device, lang, tokenizer, n_epochs=200, patience=3, ):
-    losses_train = []
-    losses_dev = []
-    sampled_epochs = []
-    best_f1 = 0
+# Running the training and evaluation loops
+def run(lang, bert_model, lr, runs=1, n_epochs=200, clip=5, patience=5, device='cuda:0'):
+
+
+    out_slot = len(lang.slot2id)
+    out_int = len(lang.intent2id)
+
+    slot_f1s, intent_acc = [], []
+    best_f1_runs = 0
+    best_model_runs = None
+
+
+    for x in tqdm(range(0, runs)):
+        model = JointModel.from_pretrained(bert_model, intents = out_int, slots = out_slot).to(device)
+
+        optimizer = optim.AdamW(model.parameters(), lr=lr)
+
+        losses_train = []
+        losses_dev = []
+        sampled_epochs = []
+        best_f1 = 0
+        best_model = None
+        patience_p = patience
+
+        for e in tqdm(range(1,n_epochs)):
+            loss = train_loop(train_loader, optimizer, model, criterion_intents=criterion_intents, criterion_slots=criterion_slots,  clip=clip, lang=lang)
+            if e % 5 == 0:
+                sampled_epochs.append(e)
+                losses_train.append(np.asarray(loss).mean())
+
+                results_dev, intent_res, loss_dev = eval_loop(dev_loader, model, lang, criterion_intents=criterion_intents, criterion_slots=criterion_slots)
+                losses_dev.append(np.asarray(loss_dev).mean())
+                f1 = results_dev['total']['f']
+
+                # print(f"Intent Acc: {intent_res['accuracy']:.3f} Slot F1: {results_dev['total']['f']:.3f}")
+                if f1 > best_f1:
+                    best_f1 = f1
+                    # save the model
+                    best_model = deepcopy(model).to("cpu")
+                    patience_p = patience # reset to patience
+                else:
+                    patience_p -= 1
+                if patience_p <= 0: # Early stopping with patient
+                    break # Not nice but it keeps the code clean
+        if best_model is None:
+            best_model = model
+
+        best_model.to(device)
+        results_test, intent_test, _ = eval_loop(test_loader, best_model, lang, criterion_intents=criterion_intents, criterion_slots=criterion_slots)
+        best_model.to("cpu")
+
+        intent_acc.append(intent_test['accuracy'])
+        slot_f1s.append(results_test['total']['f'])
+
+        print(f"Intent Acc: {intent_test['accuracy']:.3f} Slot F1: {results_test['total']['f']:.3f}")
+        # wandb.log({"Slot F1": results_test['total']['f'], "Intent Acc": intent_test['accuracy']})
+
+        if results_test['total']['f'] > best_f1_runs:
+            best_f1_runs = results_test['total']['f']
+            #best_model_runs = deepcopy(best_model)
+            #show plot
+            # plt.plot(sampled_epochs, losses_train, label='Train')
+            # plt.plot(sampled_epochs, losses_dev, label='Dev')
+            # plt.legend()
+            # plt.title(f"Loss {test_name}")
+            # plt.show()
+
+    slot_f1s = np.asarray(slot_f1s)
+    intent_acc = np.asarray(intent_acc)
+
+    # wandb.log({"Slot F1": round(slot_f1s.mean(),3), "Intent Acc": round(intent_acc.mean(), 3)})
+    print('Slot F1', round(slot_f1s.mean(),3), '+-', round(slot_f1s.std(),3))
+    print('Intent Acc', round(intent_acc.mean(), 3), '+-', round(slot_f1s.std(), 3))
     
-    pbar = tqdm(range(1,n_epochs))
-
-
-    for epoch in pbar:
-        # print(f'Epoch {epoch}')
-        loss = training_loop(model, train_loader, optimizer,
-                        criterion_intents, criterion_slots, clip=clip)
-
-        if epoch % 1 == 0: 
-            sampled_epochs.append(epoch)
-            losses_train.append(np.asarray(loss).mean())
-            results_dev, intent_res, loss_dev = evaluate_loop(model, dev_loader, criterion_intents, criterion_slots, lang, tokenizer)
-            losses_dev.append(np.asarray(loss_dev).mean())
-
-            f1 = results_dev['total']['f']
-            pbar.set_description("f1: %f" %f1)
-            # For decreasing the patience you can also use the average between slot f1 and intent accuracy
-            if f1 > best_f1:
-                best_f1 = f1
-                # Here you should save the model
-                patience = 3
-            else:
-                patience -= 1
-            if patience <= 0: # Early stopping with patience
-                break # Not nice but it keeps the code clean
-
-        # print('Slot F1: ', results_dev['total']['f'])
-
-    results_test, intent_test, _ = evaluate_loop(model, test_loader, criterion_intents, criterion_slots, lang, tokenizer)
-    return results_test, intent_test
