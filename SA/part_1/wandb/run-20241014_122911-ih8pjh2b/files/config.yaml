@@ -1,0 +1,72 @@
+wandb_version: 1
+
+learning_rate:
+  desc: null
+  value: 0.0001
+architecture:
+  desc: null
+  value: bert
+dataset:
+  desc: null
+  value: SemEval2014
+epochs:
+  desc: null
+  value: 100
+patience:
+  desc: null
+  value: 5
+runs:
+  desc: null
+  value: 5
+device:
+  desc: null
+  value: cuda:0
+bert_model:
+  desc: null
+  value: bert-base-uncased
+clip:
+  desc: null
+  value: 5
+batch_size:
+  desc: null
+  value: 32
+optimizer:
+  desc: null
+  value: AdamW
+loss:
+  desc: null
+  value: CrossEntropyLoss
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.13
+    cli_version: 0.17.5
+    framework: huggingface
+    huggingface_version: 4.38.0
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1728908951
+    t:
+      1:
+      - 1
+      - 5
+      - 11
+      - 49
+      - 53
+      - 55
+      2:
+      - 1
+      - 5
+      - 11
+      - 49
+      - 53
+      - 55
+      3:
+      - 16
+      - 23
+      4: 3.10.13
+      5: 0.17.5
+      6: 4.38.0
+      8:
+      - 5
+      13: linux-x86_64

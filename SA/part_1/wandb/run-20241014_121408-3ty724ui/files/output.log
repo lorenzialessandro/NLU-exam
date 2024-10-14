@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/disi/NLU-exam/SA/part_1/main.py", line 57, in <module>
+    main()
+  File "/home/disi/NLU-exam/SA/part_1/main.py", line 51, in main
+    run(tmp_train_raw, test_raw, bert_model=bert_model, lr=lr, runs=runs, n_epochs=n_epochs, clip=clip, patience=patience, device=device)
+  File "/home/disi/NLU-exam/SA/part_1/functions.py", line 237, in run
+    lang = Lang(sentiments, tokenizer.pad_token_id)
+NameError: name 'tokenizer' is not defined

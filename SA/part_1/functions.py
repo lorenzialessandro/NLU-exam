@@ -13,8 +13,10 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 import wandb
 import random
+import torch.optim as optim
 
 from utils import * # Import all the functions from the utils.py file
+from model import ABSAmodel
 
 # adapted from https://github.com/lixin4ever/E2E-TBSA/blob/master/evals.py
 def match_ts(gold_ts_sequence, pred_ts_sequence, lang):
@@ -111,19 +113,19 @@ def evaluate_ts(gold_ts, pred_ts, lang):
   
 # Training loop
 def train_loop(data, optimizer, model, lang, criterion_sentiments, clip=5):
-  '''Train loop for the model
+    '''Train loop for the model
 
-  Args:
-      data: data loader for the training data
-      optimizer: optimizer to use
-      model: model to train 
-      lang: lang class with the vocabulary     
-      criterion_sentiments: loss function
-      clip: gradient clipping (default is 5)
+    Args:
+        data: data loader for the training data
+        optimizer: optimizer to use
+        model: model to train 
+        lang: lang class with the vocabulary     
+        criterion_sentiments: loss function
+        clip: gradient clipping (default is 5)
 
-  Returns:
-      loss_array: array with the loss values for each batch
-  '''
+    Returns:
+        loss_array: array with the loss values for each batch
+    '''
 
     model.train()
     loss_array = []
@@ -233,6 +235,8 @@ def run(tmp_train_raw,test_raw,bert_model, lr, runs=1, n_epochs=200, clip=5, pat
     # preprocess : create the datasets, dataloaders, lang class and the model
     train_raw, dev_raw, test_raw = create_dev_set(tmp_train_raw, test_raw, portion = 0.10)
     sentiments = preprocess_dataset(train_raw, dev_raw, test_raw)
+    
+    tokenizer = BertTokenizerFast.from_pretrained(bert_model) # Download the tokenizer
 
     lang = Lang(sentiments, tokenizer.pad_token_id)
 
@@ -295,7 +299,7 @@ def run(tmp_train_raw,test_raw,bert_model, lr, runs=1, n_epochs=200, clip=5, pat
         recall.append(results_test['recall'])
         f1_micro.append(results_test['F1 micro'])
 
-        # wandb.log({"F1 macro": results_test['F1 macro'], "precision": results_test['precision'], "recall": results_test['recall'], "F1 micro": results_test['F1 micro']})
+        wandb.log({"F1 macro": results_test['F1 macro'], "precision": results_test['precision'], "recall": results_test['recall'], "F1 micro": results_test['F1 micro']})
 
         # print('F1 macro: ', results_test['F1 macro'])
         # print('Precision: ', results_test['precision'])

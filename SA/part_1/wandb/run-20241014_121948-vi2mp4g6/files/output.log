@@ -1,0 +1,21 @@
+
+  0%|                                                                                                                                   | 0/1 [00:00<?, ?it/s]
+
+
+
+
+  0%|                                                                                                                                   | 0/1 [00:49<?, ?it/s]
+Traceback (most recent call last):
+  File "/home/disi/NLU-exam/SA/part_1/main.py", line 57, in <module>
+    main()
+  File "/home/disi/NLU-exam/SA/part_1/main.py", line 51, in main
+    run(tmp_train_raw, test_raw, bert_model=bert_model, lr=lr, runs=runs, n_epochs=n_epochs, clip=clip, patience=patience, device=device)
+  File "/home/disi/NLU-exam/SA/part_1/functions.py", line 271, in run
+    loss = train_loop(train_loader, optimizer, model, lang, criterion_sentiments)
+  File "/home/disi/NLU-exam/SA/part_1/functions.py", line 142, in train_loop
+    loss.backward() # Compute the gradient, deleting the computational graph
+  File "/home/disi/anaconda3/envs/nlu24/lib/python3.10/site-packages/torch/_tensor.py", line 522, in backward
+    torch.autograd.backward(
+  File "/home/disi/anaconda3/envs/nlu24/lib/python3.10/site-packages/torch/autograd/__init__.py", line 266, in backward
+    Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+KeyboardInterrupt

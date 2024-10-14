@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from transformers import BertModel
+from transformers import BertModel, BertPreTrainedModel
 
 class ABSAmodel(BertPreTrainedModel): # Aspect Based Sentiment Analysis model
   '''Model for Aspect Based Sentiment Analysis

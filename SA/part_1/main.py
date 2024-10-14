@@ -14,8 +14,8 @@ wandb.login(key="b538d8603f23f0c22e0518a7fcef14eef2620e7d") #TODO: remove this
 # define parameters
 bert_model = 'bert-base-uncased'
 lr = 0.0001
-runs = 1
-n_epochs = 200
+runs = 5
+n_epochs = 100
 clip = 5
 patience = 5
 device = 'cuda:0'

@@ -1,0 +1,219 @@
+
+  0%|                                                                                                                                   | 0/5 [00:00<?, ?it/s]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 20%|████████████████████████▍                                                                                                 | 1/5 [04:42<18:51, 282.82s/it]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 40%|████████████████████████████████████████████████▊                                                                         | 2/5 [13:15<20:54, 418.08s/it]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 60%|█████████████████████████████████████████████████████████████████████████▏                                                | 3/5 [20:12<13:55, 417.72s/it]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 80%|█████████████████████████████████████████████████████████████████████████████████████████████████▌                        | 4/5 [24:53<06:03, 363.44s/it]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 [30:18<00:00, 363.79s/it]
+Traceback (most recent call last):
+  File "/home/disi/NLU-exam/SA/part_1/main.py", line 57, in <module>
+    main()
+  File "/home/disi/NLU-exam/SA/part_1/main.py", line 51, in main
+    run(tmp_train_raw, test_raw, bert_model=bert_model, lr=lr, runs=runs, n_epochs=n_epochs, clip=clip, patience=patience, device=device)
+  File "/home/disi/NLU-exam/SA/part_1/functions.py", line 333, in run
+    torch.save(best_model.state_dict(), path)
+  File "/home/disi/anaconda3/envs/nlu24/lib/python3.10/site-packages/torch/serialization.py", line 628, in save
+    with _open_zipfile_writer(f) as opened_zipfile:
+  File "/home/disi/anaconda3/envs/nlu24/lib/python3.10/site-packages/torch/serialization.py", line 502, in _open_zipfile_writer
+    return container(name_or_buffer)
+  File "/home/disi/anaconda3/envs/nlu24/lib/python3.10/site-packages/torch/serialization.py", line 473, in __init__
+    super().__init__(torch._C.PyTorchFileWriter(self.name))
+RuntimeError: Parent directory model_bin does not exist.
+F1 macro:  0.707 +- 0.188
+Precision:  0.94 +- 0.023
+Recall:  0.94 +- 0.023
+F1 micro:  0.939 +- 0.023

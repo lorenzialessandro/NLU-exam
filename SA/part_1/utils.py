@@ -63,11 +63,11 @@ def create_dev_set(tmp_train_raw, test_raw, portion = 0.10):
     mini_train = []
 
     for id_y, y in enumerate(tmp_train_raw):
-    if not any(count_y[s] == 1 for s in y['sentiment']): # if none of the sentiments occur exactly once, we put them in training
-        inputs.append(tmp_train_raw[id_y])
-        labels.append(y['sentiment'])
-    else:
-        mini_train.append(tmp_train_raw[id_y])  # Add to mini_train if any sentiment occurs once
+        if not any(count_y[s] == 1 for s in y['sentiment']): # if none of the sentiments occur exactly once, we put them in training
+            inputs.append(tmp_train_raw[id_y])
+            labels.append(y['sentiment'])
+        else:
+            mini_train.append(tmp_train_raw[id_y])  # Add to mini_train if any sentiment occurs once
 
     # Random Stratify
     X_train, X_dev, y_train, y_dev = train_test_split(inputs, labels, test_size=portion,
