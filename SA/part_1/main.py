@@ -4,13 +4,6 @@
 from functions import * # Import everything from functions.py file
 from utils import load_data
 
-# --- wandb ---
-import wandb
-import random
-import math
-wandb.login(key="b538d8603f23f0c22e0518a7fcef14eef2620e7d") #TODO: remove this
-# -------------
-
 # define parameters
 bert_model = 'bert-base-uncased'
 lr = 0.0001
@@ -20,27 +13,6 @@ clip = 5
 patience = 5
 device = 'cuda:0'
 
-# wandb
-wandb.init(
-    # set the wandb project where this run will be logged
-    project= "SA",
-
-    # track hyperparameters and run metadata
-    config={
-        "learning_rate": lr,
-        "architecture": "bert",
-        "dataset": "SemEval2014",
-        "epochs": n_epochs,
-        "patience": patience,
-        "runs": runs,
-        "device": device,
-        "bert_model": bert_model,
-        "clip": clip,
-        "batch_size": 32,
-        "optimizer": "AdamW",
-        "loss": "CrossEntropyLoss"
-    }
-)
 
 def main():
     # Load the datasets

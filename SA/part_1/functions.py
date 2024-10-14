@@ -299,7 +299,7 @@ def run(tmp_train_raw,test_raw,bert_model, lr, runs=1, n_epochs=200, clip=5, pat
         recall.append(results_test['recall'])
         f1_micro.append(results_test['F1 micro'])
 
-        wandb.log({"F1 macro": results_test['F1 macro'], "precision": results_test['precision'], "recall": results_test['recall'], "F1 micro": results_test['F1 micro']})
+        # wandb.log({"F1 macro": results_test['F1 macro'], "precision": results_test['precision'], "recall": results_test['recall'], "F1 micro": results_test['F1 micro']})
 
         # print('F1 macro: ', results_test['F1 macro'])
         # print('Precision: ', results_test['precision'])
@@ -326,7 +326,7 @@ def run(tmp_train_raw,test_raw,bert_model, lr, runs=1, n_epochs=200, clip=5, pat
     print('Recall: ', round(recall.mean(),3), '+-', round(recall.std(),3))
     print('F1 micro: ', round(f1_micro.mean(),3), '+-', round(f1_micro.std(),3))
 
-    wandb.log({"F1 macro": f1_macro.mean(), "precision": precision.mean(), "recall": recall.mean(), "F1 micro": f1_micro.mean()})
+    # wandb.log({"F1 macro": f1_macro.mean(), "precision": precision.mean(), "recall": recall.mean(), "F1 micro": f1_micro.mean()})
 
     # Save the model
     path = 'model_bin/ABSAmodel.pt'
