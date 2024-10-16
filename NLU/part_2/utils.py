@@ -1,26 +1,20 @@
 # Add functions or classes used for data loading and preprocessing
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.utils.data as data
-import torch.nn.functional as F
-import math
-from functools import partial
-from torch.utils.data import DataLoader
-import os
-import json
-from pprint import pprint
 import random
 import numpy as np
 from sklearn.model_selection import train_test_split
 from collections import Counter
+import torch
+import torch.utils.data as data
+import torch.nn as nn
+from torch.utils.data import Dataset
+from pprint import pprint
+from functools import partial
+import os
+import json
 
+device = 'cuda:0' # cuda:0 means we are using the GPU with id 0, if you have multiple GPU
 
-device = 'cuda:0' # it can be changed with 'cpu' if you do not have a gpu
-PAD_TOKEN = 0
-
-# =============== Preprocessing ===============
+# load the data
 def load_data(path):
     '''
         input: path/to/data
@@ -31,7 +25,7 @@ def load_data(path):
         dataset = json.loads(f.read())
     return dataset
 
-# =============== Create Dev Set ===============
+# Create Dev Set
 def create_dev_set(tmp_train_raw, test_raw, portion = 0.10):
     # First we get the 10% of the training set, then we compute the percentage of these examples
     intents = [x['intent'] for x in tmp_train_raw] # We stratify on intents
@@ -58,8 +52,19 @@ def create_dev_set(tmp_train_raw, test_raw, portion = 0.10):
 
     return train_raw, dev_raw, test_raw
 
-# =============== Words, intents and slot Preparation ===============
+# Preprocess the dataset
 def preprocess_dataset(train_raw, dev_raw, test_raw):
+    '''Preprocess the dataset
+
+    Args:
+        train_raw: list of training examples
+        dev_raw: list of development examples
+        test_raw: list of test examples
+        
+    Returns:
+        slots: set of slots
+        intents: set of intents
+    '''
     corpus = train_raw + dev_raw + test_raw # We do not want unk labels,
                                                 # however this depends on the research purpose
     slots = set(sum([line['slots'].split() for line in corpus],[]))
@@ -68,8 +73,16 @@ def preprocess_dataset(train_raw, dev_raw, test_raw):
     return slots, intents
 
 
-# =============== Lang class ===============
+# Create a vocabulary
 class Lang():
+    '''Class to process the vocabulary and labels
+    
+    Args:
+        intents: list of intents
+        slots: list of slots
+        pad_token_id: int, id of the padding token
+        cutoff: int, minimum frequency of words to be included in the vocabulary
+    '''
     def __init__(self, intents, slots, pad_token_id, cutoff=0):
         #self.word2id = self.w2id(words, cutoff=cutoff, unk=True)
         self.slot2id = self.lab2id(slots)
@@ -101,10 +114,17 @@ class Lang():
 
 
 
-# =============== Custom Dataset class ===============
-class IntentsAndSlots(data.Dataset):
+# Create dataset class
+class IntentsAndSlots(Dataset):
     '''
     Dataset class for intents and slots
+    
+    Args:
+        dataset: list of examples
+        lang: Lang object
+        unk: str, unknown token
+        tokenizer: tokenizer object
+        max_len: int, maximum length of the sequence
     '''
     # Mandatory methods are __init__, __len__ and __getitem__
     def __init__(self, dataset, lang, unk='unk', tokenizer=None, max_len=50):
@@ -189,7 +209,7 @@ class IntentsAndSlots(data.Dataset):
         return res
 
 
-# creates batches of data samples
+# Create a collate function
 def collate_fn(data, lang):
     def merge(sequences, pad_token):
         '''
@@ -236,15 +256,13 @@ def collate_fn(data, lang):
 
     return new_item
 
-# =============== Preprocess and Load Data ===============
-
-# =============== Create DataSet ===============
+# Create dataset
 def create_dataset(train_raw, dev_raw, test_raw, tokenizer, lang):
   train_dataset = IntentsAndSlots(dataset=train_raw, lang=lang, tokenizer=tokenizer)
   dev_dataset = IntentsAndSlots(dataset=dev_raw, lang=lang, tokenizer=tokenizer)
   test_dataset = IntentsAndSlots(dataset=test_raw, lang=lang, tokenizer=tokenizer)
   
-# =============== Create Dataloader ===============
+# Create dataloader
 def create_dataloader(train_dataset, dev_dataset, test_dataset, batch_size=32):
   collate_fn_with_lang = partial(collate_fn, lang=lang)
   train_loader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn_with_lang,  shuffle=True)
@@ -253,20 +271,3 @@ def create_dataloader(train_dataset, dev_dataset, test_dataset, batch_size=32):
   return train_loader, dev_loader, test_loader
 
   return train_dataset, dev_dataset, test_dataset
-
-def preprocess_and_load_data():
-    # Load the data
-    tmp_train_raw = load_data(os.path.join('dataset','train.json'))
-    test_raw = load_data(os.path.join('dataset','test.json'))
-    # Create the dev set
-    train_raw, dev_raw, test_raw = create_dev_set(tmp_train_raw, test_raw, portion = 0.10)
-    # Preprocess the data
-    slots, intents = preprocess_dataset(train_raw, dev_raw, test_raw)
-    # 
-    lang = Lang(intents, slots, tokenizer.pad_token_id)
-    # Create the datasets
-    train_dataset, dev_dataset, test_dataset = create_dataset(train_raw, dev_raw, test_raw, tokenizer, lang)
-    train_loader, dev_loader, test_loader = create_dataloader(train_dataset, dev_dataset, test_dataset, batch_size=32)  
-    
-    return train_loader, dev_loader, test_loader, lang, tokenizer
-    

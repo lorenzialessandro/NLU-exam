@@ -9,14 +9,33 @@ import copy
 from tqdm import tqdm
 from conll import evaluate
 from sklearn.metrics import classification_report
+from transformers import BertTokenizer
+import matplotlib.pyplot as plt
+from copy import deepcopy
+import wandb
+import random
+import torch.optim as optim
 
-#TODO: add imports for run function
-#TODO: add the returns for the run function
-
-# =============== Model Training and Evaluation Functions ===============
+from utils import * # Import all the functions from the utils.py file
+from model import JointModel # Import the model from the model.py file
 
 # Training loop
 def train_loop(data, optimizer, model, lang, criterion_intents, criterion_slots, clip=5):
+    '''Train loop for the model
+
+    Args:
+        data: data loader for the training data
+        optimizer: optimizer to use
+        model: model to train 
+        lang: lang class with the vocabulary     
+        criterion_intents: loss function for the intents
+        criterion_slots: loss function for the slots
+        clip: gradient clipping (default is 5)
+
+    Returns:
+        loss_array: array with the loss values (loss_intent + loss_slot) for each batch
+    '''
+    
     model.train()
     loss_array = []
     for sample in data:
@@ -44,7 +63,21 @@ def train_loop(data, optimizer, model, lang, criterion_intents, criterion_slots,
 
 # Evaluation loop
 def eval_loop(data, model, lang, criterion_intents, criterion_slots):
-
+    '''Evaluation loop for the model
+    
+    Args:
+        data: data loader for the evaluation data
+        model: model to evaluate
+        lang: lang class with the vocabulary
+        criterion_intents: loss function for the intents
+        criterion_slots: loss function for the slot
+    
+    Returns:
+        results: F1 score for the slots
+        report_intent: classification report for the intents
+        loss_array: array with the loss values (loss_intent + loss_slot) for each batch
+    '''
+    
     model.eval()
     loss_array = []
 
@@ -118,9 +151,33 @@ def eval_loop(data, model, lang, criterion_intents, criterion_slots):
 
 
 # Running the training and evaluation loops
-def run(lang, bert_model, lr, runs=1, n_epochs=200, clip=5, patience=5, device='cuda:0'):
+def run(tmp_train_raw, test_raw, bert_model, lr, runs=1, n_epochs=200, clip=5, patience=5, device='cuda:0'):
+    '''Running function : preprocess, train and evaluate the model
 
-
+    Args:
+        tmp_train_raw: training data
+        test_raw: test data
+        bert_model: bert model to use
+        lr: learning rate
+        runs: number of runs
+        n_epochs: number of epochs
+        clip: gradient clipping
+        patience: patience for early stopping
+        device: device to use
+    '''
+    
+    # preprocess : create the datasets, dataloaders, lang class and the model
+    train_raw, dev_raw, test_raw = create_dev_set(tmp_train_raw, test_raw, portion = 0.10)
+    slots, intents = preprocess_dataset(train_raw, dev_raw, test_raw)
+    
+    tokenizer = BertTokenizer.from_pretrained(bert_model) # Download the tokenizer
+    
+    lang = Lang(intents, slots, tokenizer.pad_token_id)
+    
+    criterion_slots = nn.CrossEntropyLoss(ignore_index=lang.pad_token_id)
+    criterion_intents = nn.CrossEntropyLoss()
+    # end preprocess
+    
     out_slot = len(lang.slot2id)
     out_int = len(lang.intent2id)
 
@@ -128,7 +185,7 @@ def run(lang, bert_model, lr, runs=1, n_epochs=200, clip=5, patience=5, device='
     best_f1_runs = 0
     best_model_runs = None
 
-
+    # start the runs
     for x in tqdm(range(0, runs)):
         model = JointModel.from_pretrained(bert_model, intents = out_int, slots = out_slot).to(device)
 
@@ -190,4 +247,8 @@ def run(lang, bert_model, lr, runs=1, n_epochs=200, clip=5, patience=5, device='
     # wandb.log({"Slot F1": round(slot_f1s.mean(),3), "Intent Acc": round(intent_acc.mean(), 3)})
     print('Slot F1', round(slot_f1s.mean(),3), '+-', round(slot_f1s.std(),3))
     print('Intent Acc', round(intent_acc.mean(), 3), '+-', round(slot_f1s.std(), 3))
+    
+    # Save the model
+    path = 'model_bin/JointModel.pt'
+    torch.save(best_model.state_dict(), path)
     

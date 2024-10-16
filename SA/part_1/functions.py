@@ -16,7 +16,7 @@ import random
 import torch.optim as optim
 
 from utils import * # Import all the functions from the utils.py file
-from model import ABSAmodel
+from model import ABSAmodel # Import the model from the model.py file
 
 # adapted from https://github.com/lixin4ever/E2E-TBSA/blob/master/evals.py
 def match_ts(gold_ts_sequence, pred_ts_sequence, lang):
@@ -218,7 +218,7 @@ def eval_loop(data, model, lang, criterion_sentiments):
 # =============================================================================
 
 # Running the training and evaluation loops
-def run(tmp_train_raw,test_raw,bert_model, lr, runs=1, n_epochs=200, clip=5, patience=5, device='cuda:0'):
+def run(tmp_train_raw, test_raw, bert_model, lr, runs=1, n_epochs=200, clip=5, patience=5, device='cuda:0'):
     '''Running function : preprocess, train and evaluate the model
 
     Args:

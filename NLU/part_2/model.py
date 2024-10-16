@@ -1,11 +1,22 @@
 import torch
 import torch.nn as nn
+from transformers import BertModel, BertPreTrainedModel
 
 class JointModel(BertPreTrainedModel):
     '''
     Joint model for intent classification and slot filling
+    
+    Args:
+      BertPreTrainedModel: BERT pretrained model
     '''
     def __init__(self, config, intents, slots, dropout_prob=0.1):
+        '''
+        Args:
+            config : BERT configuration
+            intents : Number of intents
+            slots : Number of slots
+            dropout_prob (float, optional): Defaults to 0.1.
+        '''
         super(JointModel, self).__init__(config)
 
         self.intents = intents
@@ -23,6 +34,17 @@ class JointModel(BertPreTrainedModel):
         # self.apply(self._init_weights)
 
     def forward(self, token_ids, attention_mask, mapping_slots):
+        '''Forward pass of the model
+        
+        Args:
+            token_ids: 
+            attention_mask : attention mask for the input
+            mapping_slots : mapping of slots to their corresponding indices in the sentence
+            
+        Returns:
+            slot_logits : logits for each word in the sentence
+            intent_logits : logits for the intent
+        '''
     
         out = self.bert(token_ids, attention_mask=attention_mask) # BERT forward pass
 

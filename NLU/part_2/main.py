@@ -1,32 +1,30 @@
 # This file is used to run your functions and print the results
 # Please write your fuctions or classes in the functions.py
 
-# Import everything from functions.py file
-from functions import *
-from model import *
-from utils import *
-import sys
-import torch.optim as optim
-from tqdm import tqdm
-from transformers import BertTokenizer, BertModel, BertPreTrainedModel #TODO move it
+from functions import * # Import everything from functions.py file
+from utils import load_data
 
 # define parameters
-device = 'cuda:0'
+bert_model = 'bert-base-uncased'
+lr = 0.0001
+runs = 5
 n_epochs = 100
-runs = 1
-patience = 3
+clip = 5
+patience = 5
+device = 'cuda:0'
 
 lr = 0.001 # learning rate
 clip = 5 # Clip the gradient
 
 
 def main():
-    train_loader, dev_loader, test_loader, lang, tokenizer = preprocess_and_load_data()
-     
-    criterion_slots = nn.CrossEntropyLoss(ignore_index=lang.pad_token_id)
-    criterion_intents = nn.CrossEntropyLoss()
+    # Load the datasets
+    tmp_train_raw = load_data(os.path.join('dataset','train.json'))
+    test_raw = load_data(os.path.join('dataset','test.json'))
     
-    #TODO check for multiple runs
+    # Lunch the run(s) with the parameters
+    run(tmp_train_raw, test_raw, bert_model=bert_model, lr=lr, runs=runs, n_epochs=n_epochs, clip=clip, patience=patience, device=device)
+    
 
 if __name__ == "__main__":
     #Wrtite the code to load the datasets and to run your functions
