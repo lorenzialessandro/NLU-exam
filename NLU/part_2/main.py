@@ -4,6 +4,11 @@
 from functions import * # Import everything from functions.py file
 from utils import load_data
 
+# wandb
+import wandb
+import random
+wandb.login(key='b538d8603f23f0c22e0518a7fcef14eef2620e7d')
+
 # define parameters
 bert_model = 'bert-base-uncased'
 lr = 0.0001
@@ -15,6 +20,31 @@ device = 'cuda:0'
 
 lr = 0.001 # learning rate
 clip = 5 # Clip the gradient
+
+# wandb
+# start a new wandb run to track this script
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="NLU",
+
+    # track hyperparameters and run metadata
+    config={
+        "bert_model": bert_model,
+        "lr": lr,
+        "runs": runs,
+        "n_epochs": n_epochs,
+        "clip": clip,
+        "patience": patience,
+        "device": device,
+        "architecture": "bert",
+        "batch_size": 32,
+        "dataset": "ATIS",
+        "optimizer": "AdamW",
+        "loss_slots": "CrossEntropyLoss",
+        "loss_intents": "CrossEntropyLoss"
+    }
+)
+
 
 
 def main():
